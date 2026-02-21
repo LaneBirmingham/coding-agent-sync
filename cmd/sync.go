@@ -12,9 +12,12 @@ import (
 
 func newSyncCmd() *cobra.Command {
 	var (
-		flagFrom   string
-		flagTo     string
-		flagDryRun bool
+		flagFrom      string
+		flagTo        string
+		flagDryRun    bool
+		flagScope     string
+		flagFromScope string
+		flagToScope   string
 	)
 
 	cmd := &cobra.Command{
@@ -34,13 +37,16 @@ func newSyncCmd() *cobra.Command {
 					return fmt.Errorf("unknown sync target %q (valid: instructions, skills)", args[0])
 				}
 			}
-			return doSync(kind, flagFrom, flagTo, flagDryRun)
+			return doSync(kind, flagFrom, flagTo, flagDryRun, flagScope, flagFromScope, flagToScope)
 		},
 	}
 
 	cmd.Flags().StringVar(&flagFrom, "from", "", "source agent (claude, copilot, opencode)")
 	cmd.Flags().StringVar(&flagTo, "to", "", "destination agent(s), comma-separated")
 	cmd.Flags().BoolVar(&flagDryRun, "dry-run", false, "preview changes without writing")
+	cmd.Flags().StringVar(&flagScope, "scope", "", "set both from and to scope (local, global)")
+	cmd.Flags().StringVar(&flagFromScope, "from-scope", "", "source scope (overrides --scope)")
+	cmd.Flags().StringVar(&flagToScope, "to-scope", "", "destination scope (overrides --scope)")
 
 	_ = cmd.MarkFlagRequired("from")
 	_ = cmd.MarkFlagRequired("to")
@@ -48,8 +54,8 @@ func newSyncCmd() *cobra.Command {
 	return cmd
 }
 
-func doSync(kind sync.ItemKind, from, to string, dryRun bool) error {
-	cfg, err := buildSyncConfig(from, to, dryRun)
+func doSync(kind sync.ItemKind, from, to string, dryRun bool, scope, fromScope, toScope string) error {
+	cfg, err := buildSyncConfig(from, to, dryRun, scope, fromScope, toScope)
 	if err != nil {
 		return err
 	}
@@ -65,8 +71,28 @@ func doSync(kind sync.ItemKind, from, to string, dryRun bool) error {
 	return nil
 }
 
-func buildSyncConfig(fromStr, toStr string, dryRun bool) (*config.SyncConfig, error) {
+func resolveScope(specific, fallback string) (config.Scope, error) {
+	s := specific
+	if s == "" {
+		s = fallback
+	}
+	if s == "" {
+		return config.ScopeLocal, nil
+	}
+	return config.ParseScope(s)
+}
+
+func buildSyncConfig(fromStr, toStr string, dryRun bool, scope, fromScopeStr, toScopeStr string) (*config.SyncConfig, error) {
 	from, err := config.ParseAgent(fromStr)
+	if err != nil {
+		return nil, err
+	}
+
+	fromScope, err := resolveScope(fromScopeStr, scope)
+	if err != nil {
+		return nil, err
+	}
+	toScope, err := resolveScope(toScopeStr, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +107,9 @@ func buildSyncConfig(fromStr, toStr string, dryRun bool) (*config.SyncConfig, er
 		if err != nil {
 			return nil, err
 		}
-		if a == from {
-			fmt.Fprintf(os.Stderr, "warning: skipping %s (same as source)\n", a)
+		// Only skip when same agent AND same scope
+		if a == from && fromScope == toScope {
+			fmt.Fprintf(os.Stderr, "warning: skipping %s (same agent and scope)\n", a)
 			continue
 		}
 		targets = append(targets, a)
@@ -100,11 +127,17 @@ func buildSyncConfig(fromStr, toStr string, dryRun bool) (*config.SyncConfig, er
 		}
 	}
 
+	if fromScope == config.ScopeGlobal && toScope == config.ScopeGlobal && flagRoot != "" && flagRoot != "." {
+		fmt.Fprintf(os.Stderr, "warning: --root is ignored when both scopes are global\n")
+	}
+
 	return &config.SyncConfig{
-		From:    from,
-		To:      targets,
-		Root:    root,
-		DryRun:  dryRun,
-		Verbose: flagVerbose,
+		From:      from,
+		To:        targets,
+		Root:      root,
+		FromScope: fromScope,
+		ToScope:   toScope,
+		DryRun:    dryRun,
+		Verbose:   flagVerbose,
 	}, nil
 }

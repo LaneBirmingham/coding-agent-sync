@@ -20,11 +20,11 @@ type Skill struct {
 // Agent defines the interface for reading and writing agent configuration.
 type Agent interface {
 	Name() string
-	InstructionsPath(root string) string
-	ReadInstructions(root string) (*Instruction, error)
-	ReadSkills(root string) ([]Skill, error)
-	WriteInstructions(root string, inst *Instruction) error
-	WriteSkills(root string, skills []Skill) error
+	InstructionsPath(loc config.Location) string
+	ReadInstructions(loc config.Location) (*Instruction, error)
+	ReadSkills(loc config.Location) ([]Skill, error)
+	WriteInstructions(loc config.Location, inst *Instruction) error
+	WriteSkills(loc config.Location, skills []Skill) error
 }
 
 // registry maps agent types to their implementations.

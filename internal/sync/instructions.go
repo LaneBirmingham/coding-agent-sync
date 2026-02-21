@@ -8,8 +8,8 @@ import (
 )
 
 // SyncInstructions syncs instructions from source to destination.
-func SyncInstructions(root string, from, to config.Agent, dryRun bool) (SyncAction, error) {
-	src, err := agent.Get(from)
+func SyncInstructions(cfg *config.SyncConfig, to config.Agent) (SyncAction, error) {
+	src, err := agent.Get(cfg.From)
 	if err != nil {
 		return SyncAction{}, err
 	}
@@ -18,18 +18,43 @@ func SyncInstructions(root string, from, to config.Agent, dryRun bool) (SyncActi
 		return SyncAction{}, err
 	}
 
-	action := SyncAction{Kind: Instructions, From: from, To: to}
+	srcLoc := config.Location{Root: cfg.Root, Scope: cfg.FromScope}
+	dstLoc := config.Location{Root: cfg.Root, Scope: cfg.ToScope}
 
-	// Detect shared file path (e.g., both use AGENTS.md)
-	if src.InstructionsPath(root) == dst.InstructionsPath(root) {
-		action.Status = "noop"
-		action.Detail = fmt.Sprintf("already in sync (both use %s)", src.InstructionsPath(root))
+	action := SyncAction{
+		Kind:      Instructions,
+		From:      cfg.From,
+		To:        to,
+		FromScope: cfg.FromScope,
+		ToScope:   cfg.ToScope,
+	}
+
+	// Check if destination supports instructions at this scope
+	dstPath := dst.InstructionsPath(dstLoc)
+	if dstPath == "" {
+		action.Status = "skipped"
+		action.Detail = fmt.Sprintf("skipped (%s does not support %s instructions)", to, dstLoc.Scope)
 		return action, nil
 	}
 
-	inst, err := src.ReadInstructions(root)
+	// Check if source supports instructions at this scope
+	srcPath := src.InstructionsPath(srcLoc)
+	if srcPath == "" {
+		action.Status = "skipped"
+		action.Detail = fmt.Sprintf("skipped (%s does not support %s instructions)", cfg.From, srcLoc.Scope)
+		return action, nil
+	}
+
+	// Detect shared file path (e.g., both use AGENTS.md at same scope)
+	if srcPath == dstPath {
+		action.Status = "noop"
+		action.Detail = fmt.Sprintf("already in sync (both use %s)", srcPath)
+		return action, nil
+	}
+
+	inst, err := src.ReadInstructions(srcLoc)
 	if err != nil {
-		return SyncAction{}, fmt.Errorf("reading instructions from %s: %w", from, err)
+		return SyncAction{}, fmt.Errorf("reading instructions from %s: %w", cfg.From, err)
 	}
 	if inst == nil {
 		action.Status = "skipped"
@@ -37,13 +62,13 @@ func SyncInstructions(root string, from, to config.Agent, dryRun bool) (SyncActi
 		return action, nil
 	}
 
-	if dryRun {
+	if cfg.DryRun {
 		action.Status = "dry-run"
 		action.Detail = fmt.Sprintf("would write (%d bytes)", len(inst.Content))
 		return action, nil
 	}
 
-	if err := dst.WriteInstructions(root, inst); err != nil {
+	if err := dst.WriteInstructions(dstLoc, inst); err != nil {
 		return SyncAction{}, fmt.Errorf("writing instructions to %s: %w", to, err)
 	}
 

@@ -17,11 +17,13 @@ const (
 
 // SyncAction represents the outcome of a single sync operation.
 type SyncAction struct {
-	Kind   ItemKind
-	From   config.Agent
-	To     config.Agent
-	Status string // "synced", "skipped", "dry-run", "noop"
-	Detail string
+	Kind      ItemKind
+	From      config.Agent
+	To        config.Agent
+	FromScope config.Scope
+	ToScope   config.Scope
+	Status    string // "synced", "skipped", "dry-run", "noop"
+	Detail    string
 }
 
 func (a SyncAction) String() string {
@@ -29,7 +31,11 @@ func (a SyncAction) String() string {
 	if a.Kind == Skills {
 		label = "skills"
 	}
-	return fmt.Sprintf("%s: %s → %s: %s", label, a.From, a.To, a.Detail)
+	scope := ""
+	if a.FromScope == config.ScopeGlobal || a.ToScope == config.ScopeGlobal {
+		scope = fmt.Sprintf(" [%s→%s]", a.FromScope, a.ToScope)
+	}
+	return fmt.Sprintf("%s: %s → %s%s: %s", label, a.From, a.To, scope, a.Detail)
 }
 
 // Result holds the output from a sync operation.
@@ -43,7 +49,7 @@ func SyncAll(cfg *config.SyncConfig, kind ItemKind) (*Result, error) {
 
 	for _, to := range cfg.To {
 		if kind == All || kind == Instructions {
-			action, err := SyncInstructions(cfg.Root, cfg.From, to, cfg.DryRun)
+			action, err := SyncInstructions(cfg, to)
 			if err != nil {
 				return nil, err
 			}
@@ -51,7 +57,7 @@ func SyncAll(cfg *config.SyncConfig, kind ItemKind) (*Result, error) {
 		}
 
 		if kind == All || kind == Skills {
-			action, err := SyncSkills(cfg.Root, cfg.From, to, cfg.DryRun)
+			action, err := SyncSkills(cfg, to)
 			if err != nil {
 				return nil, err
 			}
