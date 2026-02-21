@@ -27,6 +27,9 @@ go.work.sum
 # env file
 .env
 
+# Project binary
+coding-agent-sync
+
 # Editor/IDE
 # .idea/
 # .vscode/
