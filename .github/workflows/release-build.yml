@@ -28,8 +28,40 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${TAG_NAME#v}"
-          mkdir -p dist
-          : > "dist/SHA256SUMS"
+
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "Refusing to build from a dirty git tree in CI" >&2
+            git status --short >&2
+            exit 1
+          fi
+
+          tmpdir="$(mktemp -d)"
+          cleanup() {
+            rm -rf "${tmpdir}"
+          }
+          trap cleanup EXIT
+
+          host_bin="${tmpdir}/cas_smoke"
+          go build -trimpath \
+            -ldflags "-s -w -X github.com/LaneBirmingham/coding-agent-sync/cmd.Version=${VERSION}" \
+            -o "${host_bin}" .
+
+          expected_version="cas v${VERSION}"
+          actual_version="$("${host_bin}" version)"
+          if [[ "${actual_version}" != "${expected_version}" ]]; then
+            echo "Version smoke test failed: got '${actual_version}', want '${expected_version}'" >&2
+            exit 1
+          fi
+
+          if go version -m "${host_bin}" | grep -q "vcs.modified=true"; then
+            echo "Build metadata indicates a dirty tree; release binaries must be clean" >&2
+            go version -m "${host_bin}" >&2
+            exit 1
+          fi
+
+          distdir="${tmpdir}/dist"
+          mkdir -p "${distdir}"
+          : > "${distdir}/SHA256SUMS"
 
           for target in "darwin arm64" "linux amd64" "linux arm64"; do
             IFS=' ' read -r GOOS GOARCH <<< "${target}"
@@ -38,11 +70,16 @@ jobs:
             GOOS="${GOOS}" GOARCH="${GOARCH}" CGO_ENABLED=0 \
               go build -trimpath \
               -ldflags "-s -w -X github.com/LaneBirmingham/coding-agent-sync/cmd.Version=${VERSION}" \
-              -o "dist/${BIN}" .
+              -o "${distdir}/${BIN}" .
 
-            tar -C dist -czf "dist/${BIN}.tar.gz" "${BIN}"
-            (cd dist && sha256sum "${BIN}.tar.gz" >> "SHA256SUMS")
+            tar -C "${distdir}" -czf "${distdir}/${BIN}.tar.gz" "${BIN}"
+            (cd "${distdir}" && sha256sum "${BIN}.tar.gz" >> "SHA256SUMS")
           done
+
+          rm -rf dist
+          mkdir -p dist
+          cp "${distdir}"/*.tar.gz dist/
+          cp "${distdir}/SHA256SUMS" dist/SHA256SUMS
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
