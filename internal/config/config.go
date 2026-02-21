@@ -67,3 +67,22 @@ type SyncConfig struct {
 	DryRun    bool
 	Verbose   bool
 }
+
+// ExportConfig holds the configuration for an export operation.
+type ExportConfig struct {
+	From       Agent
+	Root       string
+	Scope      Scope
+	Output     string // output ZIP path
+	DryRun     bool
+	CASVersion string
+}
+
+// ImportConfig holds the configuration for an import operation.
+type ImportConfig struct {
+	To     []Agent
+	Root   string
+	Scope  Scope
+	Input  string // input ZIP path
+	DryRun bool
+}

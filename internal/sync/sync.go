@@ -43,6 +43,33 @@ type Result struct {
 	Actions []SyncAction
 }
 
+// ArchiveAction represents the outcome of a single export/import operation.
+type ArchiveAction struct {
+	Kind   ItemKind
+	Agent  config.Agent
+	Scope  config.Scope
+	Status string // "exported", "imported", "skipped", "dry-run"
+	Detail string
+}
+
+func (a ArchiveAction) String() string {
+	label := "instructions"
+	if a.Kind == Skills {
+		label = "skills"
+	}
+	scope := ""
+	if a.Scope == config.ScopeGlobal {
+		scope = fmt.Sprintf(" [%s]", a.Scope)
+	}
+	return fmt.Sprintf("%s: %s%s: %s", label, a.Agent, scope, a.Detail)
+}
+
+// ArchiveResult holds the output from an export or import operation.
+type ArchiveResult struct {
+	Actions  []ArchiveAction
+	Warnings []string
+}
+
 // SyncAll runs the sync operation for each target agent.
 func SyncAll(cfg *config.SyncConfig, kind ItemKind) (*Result, error) {
 	var result Result
