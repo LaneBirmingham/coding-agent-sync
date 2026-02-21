@@ -42,7 +42,7 @@ func newSyncCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&flagFrom, "from", "", "source agent (claude, copilot, opencode)")
+	cmd.Flags().StringVar(&flagFrom, "from", "", "source agent (claude, copilot, codex, opencode)")
 	cmd.Flags().StringVar(&flagTo, "to", "", "destination agent(s), comma-separated")
 	cmd.Flags().BoolVar(&flagDryRun, "dry-run", false, "preview changes without writing")
 	cmd.Flags().StringVar(&flagScope, "scope", "", "set both from and to scope (local, global)")

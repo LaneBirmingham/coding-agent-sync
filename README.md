@@ -110,6 +110,14 @@ go build -ldflags "-X github.com/LaneBirmingham/coding-agent-sync/cmd.Version=1.
 
 See [`docs/release.md`](docs/release.md) for workflow and release details.
 
+- CI checks
+- Conventional Commit enforcement
+- `release-please` setup for `main` (stable)
+- Binary release assets (`darwin/arm64`)
+
+## Codex in CI
+
+For Codex, user-level paths resolve under the CI runner's home directory. In GitHub Actions this home is ephemeral for each run, so user-level instructions and skills must be created during the workflow when needed.
 ## Included skill
 
 This repo includes a Codex skill at [`skills/coding-agent-sync/SKILL.md`](skills/coding-agent-sync/SKILL.md) that teaches an agent to install `cas` and run safe sync/export/import workflows.

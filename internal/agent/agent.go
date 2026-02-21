@@ -31,6 +31,7 @@ type Agent interface {
 var registry = map[config.Agent]Agent{
 	config.Claude:   &Claude{},
 	config.Copilot:  &Copilot{},
+	config.Codex:    &Codex{},
 	config.OpenCode: &OpenCode{},
 }
 
