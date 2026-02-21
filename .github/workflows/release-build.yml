@@ -1,0 +1,49 @@
+name: release-build
+
+on:
+  release:
+    types:
+      - published
+      - prereleased
+
+permissions:
+  contents: write
+
+jobs:
+  build-darwin-arm64:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build darwin/arm64 binary
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG_NAME#v}"
+          BIN="cas_${VERSION}_darwin_arm64"
+
+          mkdir -p dist
+
+          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 \
+            go build -trimpath \
+            -ldflags "-s -w -X github.com/LaneBirmingham/coding-agent-sync/cmd.Version=${VERSION}" \
+            -o "dist/${BIN}" .
+
+          tar -C dist -czf "dist/${BIN}.tar.gz" "${BIN}"
+          shasum -a 256 "dist/${BIN}.tar.gz" > "dist/SHA256SUMS"
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/SHA256SUMS
