@@ -29,5 +29,5 @@ See [`docs/release.md`](docs/release.md) for:
 
 - CI checks
 - Conventional Commit enforcement
-- `release-please` setup for `main` (stable) and `dev` (beta prerelease)
+- `release-please` setup for `main` (stable)
 - Binary release assets (`darwin/arm64`)
