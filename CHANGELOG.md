@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/LaneBirmingham/coding-agent-sync/compare/v0.3.1...v0.4.0) (2026-02-21)
+
+
+### Features
+
+* Build for linux and improve install process ([bfc71a0](https://github.com/LaneBirmingham/coding-agent-sync/commit/bfc71a00fddade2d121d001c4acbd49506f86f2b))
+
 ## [0.3.1](https://github.com/LaneBirmingham/coding-agent-sync/compare/v0.3.0...v0.3.1) (2026-02-21)
 
 
