@@ -77,6 +77,14 @@ func doImport(toStr, scopeStr, input string, dryRun bool) error {
 		DryRun: dryRun,
 	}
 
+	if flagVerbose {
+		targetNames := make([]string, 0, len(targets))
+		for _, t := range targets {
+			targetNames = append(targetNames, string(t))
+		}
+		fmt.Fprintf(os.Stderr, "verbose: import to=%s scope=%s root=%s input=%s dry-run=%t\n", strings.Join(targetNames, ","), cfg.Scope, cfg.Root, cfg.Input, cfg.DryRun)
+	}
+
 	result, err := sync.Import(cfg)
 	if err != nil {
 		return err

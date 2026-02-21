@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	pathpkg "path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -65,6 +66,9 @@ func Write(path string, a *Archive) error {
 
 	// Write skills
 	for _, s := range a.Skills {
+		if err := validateSkillName(s.Name); err != nil {
+			return fmt.Errorf("invalid skill name %q: %w", s.Name, err)
+		}
 		entryPath := fmt.Sprintf("skills/%s/SKILL.md", s.Name)
 		if err := writeEntry(w, entryPath, []byte(s.Content)); err != nil {
 			return err
@@ -98,6 +102,9 @@ func Read(path string) (*Archive, error) {
 			if err := json.Unmarshal(data, &m); err != nil {
 				return nil, fmt.Errorf("parsing manifest: %w", err)
 			}
+			if m.Version != FormatVersion {
+				return nil, fmt.Errorf("unsupported archive format version %q (expected %q)", m.Version, FormatVersion)
+			}
 			a.Manifest = &m
 			foundManifest = true
 
@@ -110,9 +117,16 @@ func Read(path string) (*Archive, error) {
 
 		case strings.HasPrefix(name, "skills/") && strings.HasSuffix(name, "/SKILL.md"):
 			// Extract skill name from "skills/<name>/SKILL.md"
-			parts := strings.Split(name, "/")
+			cleanName := pathpkg.Clean(name)
+			parts := strings.Split(cleanName, "/")
 			if len(parts) != 3 {
-				continue
+				return nil, fmt.Errorf("invalid skill path %q: malformed entry", name)
+			}
+			if parts[0] != "skills" || parts[2] != "SKILL.md" {
+				return nil, fmt.Errorf("invalid skill path %q: malformed entry", name)
+			}
+			if err := validateSkillName(parts[1]); err != nil {
+				return nil, fmt.Errorf("invalid skill path %q: %w", name, err)
 			}
 			data, err := readEntry(f)
 			if err != nil {
@@ -150,4 +164,17 @@ func readEntry(f *zip.File) ([]byte, error) {
 	}
 	defer rc.Close()
 	return io.ReadAll(rc)
+}
+
+func validateSkillName(name string) error {
+	if name == "" || name == "." || name == ".." {
+		return fmt.Errorf("skill name must be a non-empty directory name")
+	}
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return fmt.Errorf("skill name must not contain path separators")
+	}
+	if strings.ContainsRune(name, '\x00') {
+		return fmt.Errorf("skill name must not contain NUL")
+	}
+	return nil
 }

@@ -42,7 +42,11 @@ func Import(cfg *config.ImportConfig) (*ArchiveResult, error) {
 			Agent: to,
 			Scope: cfg.Scope,
 		}
-		if a.Instructions == nil || a.Instructions.Content == "" {
+		dstPath := dst.InstructionsPath(loc)
+		if dstPath == "" {
+			instAction.Status = "skipped"
+			instAction.Detail = fmt.Sprintf("skipped (%s does not support %s instructions)", to, cfg.Scope)
+		} else if a.Instructions == nil || a.Instructions.Content == "" {
 			instAction.Status = "skipped"
 			instAction.Detail = "skipped (no instructions in archive)"
 		} else if cfg.DryRun {

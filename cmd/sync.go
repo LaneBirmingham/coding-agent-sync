@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/LaneBirmingham/coding-agent-sync/internal/config"
@@ -60,6 +61,16 @@ func doSync(kind sync.ItemKind, from, to string, dryRun bool, scope, fromScope, 
 		return err
 	}
 
+	if cfg.Verbose {
+		targets := make([]string, 0, len(cfg.To))
+		for _, t := range cfg.To {
+			targets = append(targets, string(t))
+		}
+		slices.Sort(targets)
+		fmt.Fprintf(os.Stderr, "verbose: sync kind=%s from=%s(%s) to=%s(%s) root=%s dry-run=%t\n",
+			itemKindLabel(kind), cfg.From, cfg.FromScope, strings.Join(targets, ","), cfg.ToScope, cfg.Root, cfg.DryRun)
+	}
+
 	result, err := sync.SyncAll(cfg, kind)
 	if err != nil {
 		return err
@@ -69,6 +80,17 @@ func doSync(kind sync.ItemKind, from, to string, dryRun bool, scope, fromScope, 
 		fmt.Println(action)
 	}
 	return nil
+}
+
+func itemKindLabel(kind sync.ItemKind) string {
+	switch kind {
+	case sync.Instructions:
+		return "instructions"
+	case sync.Skills:
+		return "skills"
+	default:
+		return "all"
+	}
 }
 
 func resolveScope(specific, fallback string) (config.Scope, error) {

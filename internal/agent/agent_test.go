@@ -121,6 +121,15 @@ func TestClaude_ReadWriteSkills(t *testing.T) {
 	}
 }
 
+func TestClaude_WriteSkills_InvalidName(t *testing.T) {
+	root := setupTestDir(t)
+	c := &Claude{}
+	err := c.WriteSkills(config.Local(root), []Skill{{Name: "../escape", Content: "x"}})
+	if err == nil {
+		t.Fatal("expected invalid skill name error")
+	}
+}
+
 // --- Claude global tests ---
 
 func TestClaude_Global_ReadWriteInstructions(t *testing.T) {

@@ -69,6 +69,10 @@ func doExport(fromStr, scopeStr, output string, dryRun bool) error {
 		CASVersion: Version,
 	}
 
+	if flagVerbose {
+		fmt.Fprintf(os.Stderr, "verbose: export from=%s scope=%s root=%s output=%s dry-run=%t\n", cfg.From, cfg.Scope, cfg.Root, cfg.Output, cfg.DryRun)
+	}
+
 	result, err := sync.Export(cfg)
 	if err != nil {
 		return err

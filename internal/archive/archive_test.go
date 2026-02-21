@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -159,5 +160,94 @@ func TestReadMissingManifest(t *testing.T) {
 	_, err = Read(path)
 	if err == nil {
 		t.Fatal("expected error for missing manifest, got nil")
+	}
+}
+
+func TestReadUnsupportedManifestVersion(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad-version.zip")
+
+	original := &Archive{
+		Manifest: &Manifest{
+			Version:    "999",
+			Agent:      "claude",
+			Scope:      "local",
+			ExportedAt: time.Now().Truncate(time.Second),
+		},
+	}
+
+	if err := Write(path, original); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	_, err := Read(path)
+	if err == nil {
+		t.Fatal("expected error for unsupported version")
+	}
+	if !strings.Contains(err.Error(), "unsupported archive format version") {
+		t.Fatalf("expected unsupported version error, got %v", err)
+	}
+}
+
+func TestReadInvalidSkillPath(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad-skill-path.zip")
+
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := zip.NewWriter(f)
+
+	manifest, err := w.Create("manifest.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := manifest.Write([]byte(`{"version":"1","agent":"claude","scope":"local","exported_at":"2026-01-01T00:00:00Z"}`)); err != nil {
+		t.Fatal(err)
+	}
+
+	badSkill, err := w.Create("skills/../SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := badSkill.Write([]byte("malicious")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = Read(path)
+	if err == nil {
+		t.Fatal("expected error for invalid skill path")
+	}
+	if !strings.Contains(err.Error(), "invalid skill path") {
+		t.Fatalf("expected invalid skill path error, got %v", err)
+	}
+}
+
+func TestWriteInvalidSkillName(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad-skill-name.zip")
+
+	err := Write(path, &Archive{
+		Manifest: &Manifest{
+			Version:    FormatVersion,
+			Agent:      "claude",
+			Scope:      "local",
+			ExportedAt: time.Now().Truncate(time.Second),
+		},
+		Skills: []agent.Skill{{Name: "../escape", Content: "x"}},
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid skill name")
+	}
+	if !strings.Contains(err.Error(), "invalid skill name") {
+		t.Fatalf("expected invalid skill name error, got %v", err)
 	}
 }
