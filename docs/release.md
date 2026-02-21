@@ -1,121 +1,68 @@
-# CI and Release Guide
+# Build and Release Process
 
-This document describes the CI checks, release automation, and binary publishing flow for `coding-agent-sync`.
+## Overview
 
-## Workflow Overview
+This repository uses GitHub Actions + release-please.
 
-| Workflow | File | Trigger | Purpose |
-|---|---|---|---|
-| CI | `.github/workflows/ci.yml` | Pull requests, push to `main`/`dev` | Run `go test`, `go build`, `go vet` |
-| Conventional Commits | `.github/workflows/conventional-commits.yml` | `pull_request_target` events | Enforce semantic PR title |
-| Release Please (stable) | `.github/workflows/release-please-main.yml` | Push to `main` | Manage stable release PR + tags |
-| Release Please (beta) | `.github/workflows/release-please-dev.yml` | Push to `dev` | Manage prerelease PR + tags |
-| Release Build | `.github/workflows/release-build.yml` | GitHub release `published` or `prereleased` | Build and upload release artifacts |
+- `main` drives stable releases.
+- Conventional Commits drive changelog and semantic version bumps.
 
-## CI Checks
+## Workflows
 
-`ci.yml` runs:
+- `.github/workflows/ci.yml`
+  - Runs on PRs to `main`, and pushes to `main`/`dev`.
+  - Executes:
+    - `go test ./...`
+    - `go build ./...`
+    - `go vet ./...`
 
-```bash
-go test ./...
-go build ./...
-go vet ./...
-```
+- `.github/workflows/conventional-commits.yml`
+  - Enforces Conventional Commit style PR titles.
+  - Use squash merges so the PR title becomes the release-relevant commit message.
 
-Use this locally before opening a PR:
+- `.github/workflows/release-please-main.yml`
+  - Runs release-please against `main`.
+  - Creates/updates release PRs and publishes stable releases.
 
-```bash
-go test ./... && go build ./... && go vet ./...
-```
+- `.github/workflows/release-build.yml`
+  - Triggered on GitHub release publish.
+  - Builds `darwin/arm64` binary.
+  - Injects version at build time with ldflags.
+  - Uploads `.tar.gz` asset and `SHA256SUMS`.
 
-## Conventional Commit Enforcement
+## Release-Please Configuration
 
-`conventional-commits.yml` checks PR titles with `amannn/action-semantic-pull-request@v5`.
+- Stable config:
+  - `.release-please-config-main.json`
+  - `.release-please-manifest-main.json`
 
-Accepted types:
+## Required Repository Setup
 
-- `feat`
-- `fix`
-- `docs`
-- `style`
-- `refactor`
-- `perf`
-- `test`
-- `build`
-- `ci`
-- `chore`
-- `revert`
+1. Add repository secret:
+   - `RELEASE_PLEASE_TOKEN` (PAT with repo permissions).
 
-## Release Automation
+2. In repository settings, allow Actions to create and approve pull requests if required by your org policy.
 
-Two `release-please` configs are used:
+3. Protect `main` branch and require checks:
+   - `ci / test-build-vet`
+   - `conventional-commits / semantic-pr-title`
 
-- `main` branch: stable tags like `v1.2.3`
-- `dev` branch: prerelease tags like `v1.2.4-beta.1`
+4. For `dev`, if you continue pushing directly (no PRs), keep CI on push and skip PR-only protections.
 
-Config files:
+## Commit and PR conventions
 
-- `.release-please-config-main.json`
-- `.release-please-config-dev.json`
-- `.release-please-manifest-main.json`
-- `.release-please-manifest-dev.json`
+Use Conventional Commit PR titles, for example:
 
-### Required secret
+- `feat: add opencode export command`
+- `fix: handle missing skills directory`
+- `docs: clarify sync scope behavior`
 
-- `RELEASE_PLEASE_TOKEN` with permission to create and update PRs/issues/releases.
+## Optional local pre-commit hook
 
-### Release flow
+A basic hook is available at `.githooks/pre-commit` and runs `go vet ./...`.
 
-1. Merge Conventional Commit PRs into `main` (stable) or `dev` (beta).
-2. `release-please` updates or opens a release PR.
-3. Merge the release PR.
-4. `release-please` creates a GitHub release and tag.
-5. `release-build.yml` runs on that release and uploads binary artifacts.
-
-## Published Binary Artifacts
-
-Current release build publishes:
-
-- `cas_<version>_darwin_arm64.tar.gz`
-- `SHA256SUMS`
-
-Build flags include version injection:
+Enable it locally:
 
 ```bash
--ldflags "-s -w -X github.com/LaneBirmingham/coding-agent-sync/cmd.Version=${VERSION}"
-```
-
-### Verify and install
-
-```bash
-VERSION="0.1.0"
-ASSET="cas_${VERSION}_darwin_arm64.tar.gz"
-TMPDIR="$(mktemp -d)"
-curl -fL "https://github.com/LaneBirmingham/coding-agent-sync/releases/download/v${VERSION}/${ASSET}" -o "${ASSET}"
-curl -fL "https://github.com/LaneBirmingham/coding-agent-sync/releases/download/v${VERSION}/SHA256SUMS" -o SHA256SUMS
-EXPECTED="$(awk "/${ASSET}/{print \$1; exit}" SHA256SUMS)"
-ACTUAL="$(shasum -a 256 "${ASSET}" | awk '{print $1}')"
-test "${EXPECTED}" = "${ACTUAL}"
-tar -xzf "${ASSET}" -C "${TMPDIR}"
-mkdir -p "${HOME}/.local/bin"
-install -m 0755 "${TMPDIR}/cas_${VERSION}_darwin_arm64" "${HOME}/.local/bin/cas"
-export PATH="${HOME}/.local/bin:${PATH}"
-cas version
-```
-
-## Running `cas` in CI
-
-Example workflow snippet:
-
-```yaml
-- name: Install cas
-  run: |
-    go install github.com/LaneBirmingham/coding-agent-sync@latest
-    echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-
-- name: Preview sync
-  run: cas diff --from claude --to copilot,opencode --scope local
-
-- name: Apply sync
-  run: cas sync --from claude --to copilot,opencode --scope local
+git config core.hooksPath .githooks
 ```
