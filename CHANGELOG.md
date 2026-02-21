@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/LaneBirmingham/coding-agent-sync/compare/v0.3.0...v0.3.1) (2026-02-21)
+
+
+### Documentation
+
+* Add AGENTS.MD file ([16fb45c](https://github.com/LaneBirmingham/coding-agent-sync/commit/16fb45c5367ae039ec0e380bc20daeb2f2e0d3f5))
+* Clean up of some docs ([ae4f721](https://github.com/LaneBirmingham/coding-agent-sync/commit/ae4f721cf91622a9ba2d56da645c959b9ae34ecb))
+
 ## [0.3.0](https://github.com/LaneBirmingham/coding-agent-sync/compare/v0.2.0...v0.3.0) (2026-02-21)
 
 
