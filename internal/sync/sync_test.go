@@ -60,6 +60,24 @@ func TestSyncInstructions_ClaudeToCopilot(t *testing.T) {
 	}
 }
 
+func TestSyncInstructions_ClaudeToCodex(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "CLAUDE.md"), "# My instructions")
+
+	cfg := localCfg(root, config.Claude, nil, false)
+	action, err := SyncInstructions(cfg, config.Codex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if action.Status != "synced" {
+		t.Errorf("expected status synced, got %q", action.Status)
+	}
+	got := readFile(t, filepath.Join(root, "AGENTS.md"))
+	if got != "# My instructions" {
+		t.Errorf("expected '# My instructions', got %q", got)
+	}
+}
+
 func TestSyncInstructions_DryRun(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, filepath.Join(root, "CLAUDE.md"), "# My instructions")
@@ -85,6 +103,21 @@ func TestSyncInstructions_SharedPath(t *testing.T) {
 	root := t.TempDir()
 	cfg := localCfg(root, config.Copilot, nil, false)
 	action, err := SyncInstructions(cfg, config.OpenCode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if action.Status != "noop" {
+		t.Errorf("expected status noop, got %q", action.Status)
+	}
+	if !strings.Contains(action.String(), "already in sync") {
+		t.Errorf("expected already-in-sync message, got %q", action.String())
+	}
+}
+
+func TestSyncInstructions_SharedPath_CodexToCopilot(t *testing.T) {
+	root := t.TempDir()
+	cfg := localCfg(root, config.Codex, nil, false)
+	action, err := SyncInstructions(cfg, config.Copilot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -314,6 +347,60 @@ func TestSyncSkills_Global_ClaudeToCopilot(t *testing.T) {
 	}
 
 	got := readFile(t, filepath.Join(home, ".copilot", "skills", "gs1", "SKILL.md"))
+	if got != "global skill" {
+		t.Errorf("expected 'global skill', got %q", got)
+	}
+}
+
+func TestSyncInstructions_Global_ClaudeToCodex(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	writeFile(t, filepath.Join(home, ".claude", "CLAUDE.md"), "# Global instructions")
+
+	cfg := &config.SyncConfig{
+		From:      config.Claude,
+		To:        []config.Agent{config.Codex},
+		FromScope: config.ScopeGlobal,
+		ToScope:   config.ScopeGlobal,
+	}
+
+	action, err := SyncInstructions(cfg, config.Codex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if action.Status != "synced" {
+		t.Errorf("expected synced, got %q: %s", action.Status, action.Detail)
+	}
+
+	got := readFile(t, filepath.Join(home, ".codex", "AGENTS.md"))
+	if got != "# Global instructions" {
+		t.Errorf("expected '# Global instructions', got %q", got)
+	}
+}
+
+func TestSyncSkills_Global_ClaudeToCodex(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	writeFile(t, filepath.Join(home, ".claude", "skills", "gs1", "SKILL.md"), "global skill")
+
+	cfg := &config.SyncConfig{
+		From:      config.Claude,
+		To:        []config.Agent{config.Codex},
+		FromScope: config.ScopeGlobal,
+		ToScope:   config.ScopeGlobal,
+	}
+
+	action, err := SyncSkills(cfg, config.Codex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if action.Status != "synced" {
+		t.Errorf("expected synced, got %q: %s", action.Status, action.Detail)
+	}
+
+	got := readFile(t, filepath.Join(home, ".agents", "skills", "gs1", "SKILL.md"))
 	if got != "global skill" {
 		t.Errorf("expected 'global skill', got %q", got)
 	}

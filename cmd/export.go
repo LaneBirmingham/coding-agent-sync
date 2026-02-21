@@ -27,7 +27,7 @@ func newExportCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&flagFrom, "from", "", "source agent (claude, copilot, opencode)")
+	cmd.Flags().StringVar(&flagFrom, "from", "", "source agent (claude, copilot, codex, opencode)")
 	cmd.Flags().StringVarP(&flagScope, "scope", "", "local", "scope (local, global)")
 	cmd.Flags().StringVarP(&flagOutput, "output", "o", "", "output ZIP path (auto-generated if omitted)")
 	cmd.Flags().BoolVar(&flagDryRun, "dry-run", false, "preview export without writing")

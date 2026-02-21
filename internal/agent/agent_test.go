@@ -369,3 +369,238 @@ func TestOpenCode_Global_ReadSkills_Fallback(t *testing.T) {
 		t.Errorf("expected fallback skills, got %v", skills)
 	}
 }
+
+// --- Codex local tests ---
+
+func TestCodex_ReadWriteInstructions(t *testing.T) {
+	root := setupTestDir(t)
+	writeTestFile(t, filepath.Join(root, "AGENTS.md"), "# Codex instructions")
+
+	c := &Codex{}
+	inst, err := c.ReadInstructions(config.Local(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst.Content != "# Codex instructions" {
+		t.Errorf("unexpected: %q", inst.Content)
+	}
+
+	root2 := setupTestDir(t)
+	err = c.WriteInstructions(config.Local(root2), inst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := readTestFile(t, filepath.Join(root2, "AGENTS.md"))
+	if got != "# Codex instructions" {
+		t.Errorf("expected '# Codex instructions', got %q", got)
+	}
+}
+
+func TestCodex_ReadInstructions_Local_FallbackPriority(t *testing.T) {
+	root := setupTestDir(t)
+	writeTestFile(t, filepath.Join(root, "AGENTS.override.md"), "# Override")
+	writeTestFile(t, filepath.Join(root, "AGENTS.md"), "# Agents")
+	writeTestFile(t, filepath.Join(root, "TEAM_GUIDE.md"), "# Team")
+	writeTestFile(t, filepath.Join(root, ".agents.md"), "# DotAgents")
+
+	c := &Codex{}
+	inst, err := c.ReadInstructions(config.Local(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst == nil || inst.Content != "# Override" {
+		t.Errorf("expected override content, got %v", inst)
+	}
+}
+
+func TestCodex_ReadInstructions_Local_FallbackFiles(t *testing.T) {
+	root := setupTestDir(t)
+	writeTestFile(t, filepath.Join(root, "TEAM_GUIDE.md"), "# Team")
+
+	c := &Codex{}
+	inst, err := c.ReadInstructions(config.Local(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst == nil || inst.Content != "# Team" {
+		t.Errorf("expected TEAM_GUIDE fallback content, got %v", inst)
+	}
+}
+
+func TestCodex_Skills_Local_CanonicalAndFallback(t *testing.T) {
+	root := setupTestDir(t)
+	writeTestFile(t, filepath.Join(root, ".codex", "skills", "legacy", "SKILL.md"), "legacy content")
+	writeTestFile(t, filepath.Join(root, ".agents", "skills", "canonical", "SKILL.md"), "canonical content")
+
+	c := &Codex{}
+	skills, err := c.ReadSkills(config.Local(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skills) != 1 || skills[0].Name != "canonical" {
+		t.Errorf("expected canonical local skills, got %v", skills)
+	}
+}
+
+func TestCodex_Skills_Local_Fallback(t *testing.T) {
+	root := setupTestDir(t)
+	writeTestFile(t, filepath.Join(root, ".codex", "skills", "legacy", "SKILL.md"), "legacy content")
+
+	c := &Codex{}
+	skills, err := c.ReadSkills(config.Local(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skills) != 1 || skills[0].Name != "legacy" {
+		t.Errorf("expected legacy fallback skills, got %v", skills)
+	}
+}
+
+func TestCodex_WriteSkills_LocalCanonical(t *testing.T) {
+	root := setupTestDir(t)
+	c := &Codex{}
+
+	err := c.WriteSkills(config.Local(root), []Skill{{Name: "my-skill", Content: "skill content"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := readTestFile(t, filepath.Join(root, ".agents", "skills", "my-skill", "SKILL.md"))
+	if got != "skill content" {
+		t.Errorf("expected canonical local skill write, got %q", got)
+	}
+}
+
+// --- Codex global tests ---
+
+func TestCodex_Global_ReadWriteInstructions(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+
+	c := &Codex{}
+
+	inst, err := c.ReadInstructions(config.Global())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst != nil {
+		t.Error("expected nil for missing global instructions")
+	}
+
+	err = c.WriteInstructions(config.Global(), &Instruction{Content: "# Global Codex"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	inst, err = c.ReadInstructions(config.Global())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst == nil || inst.Content != "# Global Codex" {
+		t.Errorf("expected '# Global Codex', got %v", inst)
+	}
+
+	path := c.InstructionsPath(config.Global())
+	if path != filepath.Join(home, ".codex", "AGENTS.md") {
+		t.Errorf("unexpected global path: %q", path)
+	}
+}
+
+func TestCodex_Global_Instructions_UsesCODEXHOME(t *testing.T) {
+	home := t.TempDir()
+	codexHome := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", codexHome)
+
+	c := &Codex{}
+	err := c.WriteInstructions(config.Global(), &Instruction{Content: "# From custom codex home"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := readTestFile(t, filepath.Join(codexHome, "AGENTS.md"))
+	if got != "# From custom codex home" {
+		t.Errorf("expected custom CODEX_HOME write, got %q", got)
+	}
+}
+
+func TestCodex_Global_Instructions_FallbackToHomeCodex(t *testing.T) {
+	home := t.TempDir()
+	codexHome := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", codexHome)
+
+	writeTestFile(t, filepath.Join(home, ".codex", "AGENTS.md"), "# Home fallback")
+
+	c := &Codex{}
+	inst, err := c.ReadInstructions(config.Global())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst == nil || inst.Content != "# Home fallback" {
+		t.Errorf("expected fallback content, got %v", inst)
+	}
+}
+
+func TestCodex_Global_Skills_CanonicalAndFallback(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+
+	writeTestFile(t, filepath.Join(home, ".agents", "skills", "canonical", "SKILL.md"), "canonical content")
+	writeTestFile(t, filepath.Join(home, ".codex", "skills", "legacy", "SKILL.md"), "legacy content")
+
+	c := &Codex{}
+	skills, err := c.ReadSkills(config.Global())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skills) != 1 || skills[0].Name != "canonical" {
+		t.Errorf("expected canonical global skills, got %v", skills)
+	}
+}
+
+func TestCodex_Global_Skills_Fallback(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+
+	writeTestFile(t, filepath.Join(home, ".codex", "skills", "legacy", "SKILL.md"), "legacy content")
+
+	c := &Codex{}
+	skills, err := c.ReadSkills(config.Global())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skills) != 1 || skills[0].Name != "legacy" {
+		t.Errorf("expected legacy fallback skills, got %v", skills)
+	}
+}
+
+func TestCodex_WriteSkills_GlobalCanonical(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+
+	c := &Codex{}
+	err := c.WriteSkills(config.Global(), []Skill{{Name: "my-skill", Content: "global skill"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := readTestFile(t, filepath.Join(home, ".agents", "skills", "my-skill", "SKILL.md"))
+	if got != "global skill" {
+		t.Errorf("expected canonical global skill write, got %q", got)
+	}
+}
+
+func TestCodex_Global_InstructionsPath_WindowsStyleEnv(t *testing.T) {
+	t.Setenv("HOME", "")
+	t.Setenv("USERPROFILE", `C:\Users\codex`)
+	t.Setenv("CODEX_HOME", "")
+
+	c := &Codex{}
+	got := c.InstructionsPath(config.Global())
+	want := filepath.Join(`C:\Users\codex`, ".codex", "AGENTS.md")
+	if got != want {
+		t.Errorf("expected windows-style home path %q, got %q", want, got)
+	}
+}

@@ -11,19 +11,20 @@ type Agent string
 const (
 	Claude   Agent = "claude"
 	Copilot  Agent = "copilot"
+	Codex    Agent = "codex"
 	OpenCode Agent = "opencode"
 )
 
 // ValidAgents lists all supported agents.
-var ValidAgents = []Agent{Claude, Copilot, OpenCode}
+var ValidAgents = []Agent{Claude, Copilot, Codex, OpenCode}
 
 // ParseAgent converts a string to an Agent, returning an error if invalid.
 func ParseAgent(s string) (Agent, error) {
 	switch Agent(strings.ToLower(s)) {
-	case Claude, Copilot, OpenCode:
+	case Claude, Copilot, Codex, OpenCode:
 		return Agent(strings.ToLower(s)), nil
 	default:
-		return "", fmt.Errorf("unknown agent %q (valid: claude, copilot, opencode)", s)
+		return "", fmt.Errorf("unknown agent %q (valid: claude, copilot, codex, opencode)", s)
 	}
 }
 
