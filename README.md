@@ -31,3 +31,7 @@ See [`docs/release.md`](docs/release.md) for:
 - Conventional Commit enforcement
 - `release-please` setup for `main` (stable)
 - Binary release assets (`darwin/arm64`)
+
+## Codex in CI
+
+For Codex, user-level paths resolve under the CI runner's home directory. In GitHub Actions this home is ephemeral for each run, so user-level instructions and skills must be created during the workflow when needed.
