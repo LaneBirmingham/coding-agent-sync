@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/LaneBirmingham/coding-agent-sync/compare/v0.2.0...v0.3.0) (2026-02-21)
+
+
+### Features
+
+* Agent skill and docs update ([#3](https://github.com/LaneBirmingham/coding-agent-sync/issues/3)) ([ad25427](https://github.com/LaneBirmingham/coding-agent-sync/commit/ad25427ee919e4a2b046df295901cf5691433e58))
+* codex agent support ([#5](https://github.com/LaneBirmingham/coding-agent-sync/issues/5)) ([5d16218](https://github.com/LaneBirmingham/coding-agent-sync/commit/5d16218adccf12e9f8a0a457ca2300dbbbb0702d))
+
 ## [0.2.0](https://github.com/LaneBirmingham/coding-agent-sync/compare/v0.1.0...v0.2.0) (2026-02-21)
 
 
