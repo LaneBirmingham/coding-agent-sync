@@ -1,16 +1,29 @@
 # coding-agent-sync
 
-`coding-agent-sync` (`cas`) syncs instructions and skills between Claude Code, GitHub Copilot, and OpenCode.
+`coding-agent-sync` (`cas`) syncs instructions and skills across AI coding agents: Claude Code, GitHub Copilot (coding agent / agent mode), and OpenCode.
 
 ## Background
 
-Many teams keep the same guidance in multiple places (`CLAUDE.md`, `AGENTS.md`, and skill folders). `cas` helps you keep these files aligned with a dry-run-first workflow so you can preview changes before writing.
+Many people switch between AI coding agents, whether that is due to subscription/usage limits or using different tools for work vs personal projects. `cas` helps keep instructions and skills in sync across Claude Code, GitHub Copilot (coding agent / agent mode), and OpenCode so you can avoid manual copy/paste between agent-specific directories and keep your best setup available everywhere.
 
-## Install
+## AI-assisted install and usage
 
-### Option 1: Download a release (recommended)
+If your coding agent supports skills, you can install the skill in this repo and let the agent handle setup and commands.
 
-Releases: <https://github.com/LaneBirmingham/coding-agent-sync/releases>
+1. Add this skill to your current coding agent: [`skills/coding-agent-sync/SKILL.md`](skills/coding-agent-sync/SKILL.md).
+2. Ask your agent to run setup and usage for you.
+3. The skill is designed to ask for explicit consent before agent-run install steps.
+
+Example prompt to your agent:
+
+```text
+Use the coding-agent-sync skill to install cas and sync my instructions and skills from Claude to OpenCode. Ask me before installing anything.
+```
+
+If you prefer manual control, install from releases and then ask your agent to continue:
+<https://github.com/LaneBirmingham/coding-agent-sync/releases>
+
+## Manual install and usage
 
 ### What is currently built
 
@@ -20,6 +33,10 @@ Releases: <https://github.com/LaneBirmingham/coding-agent-sync/releases>
 - Artifact name: `cas_<version>_darwin_arm64.tar.gz`
 - Checksum file: `SHA256SUMS`
 - Other platforms can install from source with `go install`.
+
+### Install manually (release binary)
+
+Releases: <https://github.com/LaneBirmingham/coding-agent-sync/releases>
 
 Quick install for macOS Apple Silicon:
 
@@ -34,38 +51,21 @@ export PATH="${HOME}/.local/bin:${PATH}"
 cas version
 ```
 
-### Option 2: Install from source
+### Install manually (source)
 
 ```bash
 go install github.com/LaneBirmingham/coding-agent-sync@latest
 ```
 
-## Usage
-
-Preview before applying changes:
+### Usage commands
 
 ```bash
 cas diff --from claude --to copilot,opencode --scope local
 cas sync --from claude --to copilot,opencode --scope local
-```
-
-Sync only one content type:
-
-```bash
 cas sync instructions --from claude --to opencode --scope local
 cas sync skills --from claude --to copilot --scope local
-```
-
-Use archive export/import for migration or backup:
-
-```bash
 cas export --from claude --scope local -o claude-local.zip
 cas import --to copilot,opencode --scope local -i claude-local.zip
-```
-
-Show command help:
-
-```bash
 cas --help
 cas sync --help
 ```
