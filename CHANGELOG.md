@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/LaneBirmingham/coding-agent-sync/compare/v0.4.0...v0.4.1) (2026-02-21)
+
+
+### Bug Fixes
+
+* Fix binary versioning ([387ebd8](https://github.com/LaneBirmingham/coding-agent-sync/commit/387ebd8787d7d8911c0872036930535974d74ec3))
+
 ## [0.4.0](https://github.com/LaneBirmingham/coding-agent-sync/compare/v0.3.1...v0.4.0) (2026-02-21)
 
 
