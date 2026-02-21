@@ -1,10 +1,14 @@
 # coding-agent-sync
 
-`coding-agent-sync` (`cas`) syncs instructions and skills across AI coding agents: Claude Code, GitHub Copilot (coding agent / agent mode), and OpenCode.
+[![CI](https://github.com/LaneBirmingham/coding-agent-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/LaneBirmingham/coding-agent-sync/actions/workflows/ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/LaneBirmingham/coding-agent-sync?display_name=tag)](https://github.com/LaneBirmingham/coding-agent-sync/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+`coding-agent-sync` (`cas`) syncs instructions and skills across AI coding agents: Claude Code, GitHub Copilot (coding agent / agent mode), Codex, and OpenCode.
 
 ## Background
 
-Many people switch between AI coding agents, whether that is due to subscription/usage limits or using different tools for work vs personal projects. `cas` helps keep instructions and skills in sync across Claude Code, GitHub Copilot (coding agent / agent mode), and OpenCode so you can avoid manual copy/paste between agent-specific directories and keep your best setup available everywhere.
+Many people switch between AI coding agents, whether that is due to subscription/usage limits or using different tools for work vs personal projects. `cas` helps keep instructions and skills in sync across Claude Code, GitHub Copilot (coding agent / agent mode), Codex, and OpenCode so you can avoid manual copy/paste between agent-specific directories and keep your best setup available everywhere.
 
 ## AI-assisted install and usage
 
@@ -37,22 +41,35 @@ cas import --to copilot,opencode --scope local -i claude-local.zip
 cas --help
 cas sync --help
 ```
-### Install manually (release binary)
+### Install (one line)
 
 Releases: <https://github.com/LaneBirmingham/coding-agent-sync/releases>
 
-Quick install for macOS Apple Silicon:
+Supported prebuilt targets:
+
+- `darwin/arm64`
+- `linux/amd64`
+- `linux/arm64`
+
+Install the latest release:
 
 ```bash
-VERSION="$(curl -fsSL https://api.github.com/repos/LaneBirmingham/coding-agent-sync/releases/latest | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p')"
-ASSET="cas_${VERSION}_darwin_arm64.tar.gz"
-curl -fL "https://github.com/LaneBirmingham/coding-agent-sync/releases/download/v${VERSION}/${ASSET}" -o "/tmp/${ASSET}"
-tar -xzf "/tmp/${ASSET}" -C /tmp
-mkdir -p "${HOME}/.local/bin"
-install -m 0755 "/tmp/cas_${VERSION}_darwin_arm64" "${HOME}/.local/bin/cas"
-export PATH="${HOME}/.local/bin:${PATH}"
-cas version
+curl -fsSL https://raw.githubusercontent.com/LaneBirmingham/coding-agent-sync/main/scripts/install.sh | bash
 ```
+
+Install a specific version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/LaneBirmingham/coding-agent-sync/main/scripts/install.sh | CAS_VERSION=v0.3.0 bash
+```
+
+Change install directory:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/LaneBirmingham/coding-agent-sync/main/scripts/install.sh | CAS_INSTALL_DIR=/usr/local/bin bash
+```
+
+Script location: [`scripts/install.sh`](scripts/install.sh)
 
 ### Install manually (source)
 
@@ -63,8 +80,8 @@ go install github.com/LaneBirmingham/coding-agent-sync@latest
 ### What is currently built
 
 - Stable releases are published from `main`.
-- Current prebuilt artifact target is `darwin/arm64`.
-- Artifact name: `cas_<version>_darwin_arm64.tar.gz`
+- Current prebuilt artifact targets are `darwin/arm64`, `linux/amd64`, and `linux/arm64`.
+- Artifact name: `cas_<version>_<os>_<arch>.tar.gz`
 - Checksum file: `SHA256SUMS`
 - Other platforms can install from source with `go install`.
 
@@ -111,7 +128,13 @@ See [`docs/release.md`](docs/release.md) for workflow and release details.
 - CI checks
 - Conventional Commit enforcement
 - `release-please` setup for `main` (stable)
-- Binary release assets (`darwin/arm64`)
+- Binary release assets (`darwin/arm64`, `linux/amd64`, `linux/arm64`)
+
+## Contributing
+
+PRs are welcome. For substantial changes, please open an issue first so we can align on scope.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for local validation steps and PR expectations.
 
 ## AI-assisted development disclaimer
 

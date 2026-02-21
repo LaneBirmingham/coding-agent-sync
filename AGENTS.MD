@@ -79,7 +79,15 @@ go build -ldflags "-X github.com/LaneBirmingham/coding-agent-sync/cmd.Version=<v
 - CI workflow (`.github/workflows/ci.yml`) runs test/build/vet.
 - PR titles to `main` must follow Conventional Commits (`.github/workflows/conventional-commits.yml`).
 - Release Please on `main` manages stable releases.
-- Release build publishes `darwin/arm64` artifact and checksum.
+- Release build publishes `darwin/arm64`, `linux/amd64`, and `linux/arm64` artifacts plus checksum file.
+
+## Skill Maintenance Requirements
+
+- Treat `skills/coding-agent-sync/SKILL.md` as a maintained product surface, not a one-time doc.
+- If install behavior changes (`scripts/install.sh`, release artifact names, checksum format, supported platforms), update both `README.md` install instructions and `skills/coding-agent-sync/SKILL.md` in the same PR.
+- If agent behavior changes (`internal/agent/*`, supported agents, scope/path precedence), update the skill's “Scope and path behavior” section in the same PR.
+- Keep skill frontmatter (`name`, `description`) aligned with currently supported agents and workflows.
+- When touching the skill, validate command examples still work (`cas --help`, `cas sync --help`, and `scripts/install.sh --help`).
 
 ## Commit and PR Guidance
 

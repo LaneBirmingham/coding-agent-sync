@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build-darwin-arm64:
+  build-binaries:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,23 +22,27 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Build darwin/arm64 binary
+      - name: Build release binaries
         env:
           TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
           VERSION="${TAG_NAME#v}"
-          BIN="cas_${VERSION}_darwin_arm64"
-
           mkdir -p dist
+          : > "dist/SHA256SUMS"
 
-          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 \
-            go build -trimpath \
-            -ldflags "-s -w -X github.com/LaneBirmingham/coding-agent-sync/cmd.Version=${VERSION}" \
-            -o "dist/${BIN}" .
+          for target in "darwin arm64" "linux amd64" "linux arm64"; do
+            IFS=' ' read -r GOOS GOARCH <<< "${target}"
+            BIN="cas_${VERSION}_${GOOS}_${GOARCH}"
 
-          tar -C dist -czf "dist/${BIN}.tar.gz" "${BIN}"
-          shasum -a 256 "dist/${BIN}.tar.gz" > "dist/SHA256SUMS"
+            GOOS="${GOOS}" GOARCH="${GOARCH}" CGO_ENABLED=0 \
+              go build -trimpath \
+              -ldflags "-s -w -X github.com/LaneBirmingham/coding-agent-sync/cmd.Version=${VERSION}" \
+              -o "dist/${BIN}" .
+
+            tar -C dist -czf "dist/${BIN}.tar.gz" "${BIN}"
+            (cd dist && sha256sum "${BIN}.tar.gz" >> "SHA256SUMS")
+          done
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2

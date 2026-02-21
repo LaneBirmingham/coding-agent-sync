@@ -26,9 +26,12 @@ This repository uses GitHub Actions + release-please.
 
 - `.github/workflows/release-build.yml`
   - Triggered on GitHub release publish.
-  - Builds `darwin/arm64` binary.
+  - Builds binaries for:
+    - `darwin/arm64`
+    - `linux/amd64`
+    - `linux/arm64`
   - Injects version at build time with ldflags.
-  - Uploads `.tar.gz` asset and `SHA256SUMS`.
+  - Uploads `.tar.gz` assets and `SHA256SUMS`.
 
 ## Release-Please Configuration
 

@@ -1,6 +1,6 @@
 ---
 name: coding-agent-sync
-description: Install and operate the `cas` (coding-agent-sync) CLI to sync instructions and skills between Claude Code, GitHub Copilot, and OpenCode. Use when asked to migrate, compare, back up, or standardize agent instructions/skills across agents or scopes, including downloading/installing the binary when `cas` is missing.
+description: Install and operate the `cas` (coding-agent-sync) CLI to sync instructions and skills between Claude Code, GitHub Copilot, Codex, and OpenCode. Use when asked to migrate, compare, back up, or standardize agent instructions/skills across agents or scopes, including downloading/installing the binary when `cas` is missing.
 ---
 
 # coding-agent-sync
@@ -23,26 +23,20 @@ Ask:
 If the user declines or prefers manual install, share the releases link and stop until they confirm installation.
 If the user approves, install in this order.
 
-### Preferred: release binary (`darwin/arm64`)
+### Preferred: official install script (release binaries)
 
 ```bash
-set -euo pipefail
-if [ "$(uname -s)" = "Darwin" ] && [ "$(uname -m)" = "arm64" ]; then
-  VERSION="$(curl -fsSL https://api.github.com/repos/LaneBirmingham/coding-agent-sync/releases/latest | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p')"
-  ASSET="cas_${VERSION}_darwin_arm64.tar.gz"
-  TMPDIR="$(mktemp -d)"
-  curl -fL "https://github.com/LaneBirmingham/coding-agent-sync/releases/download/v${VERSION}/${ASSET}" -o "${TMPDIR}/${ASSET}"
-  curl -fL "https://github.com/LaneBirmingham/coding-agent-sync/releases/download/v${VERSION}/SHA256SUMS" -o "${TMPDIR}/SHA256SUMS"
-  EXPECTED="$(awk "/${ASSET}/{print \$1; exit}" "${TMPDIR}/SHA256SUMS")"
-  ACTUAL="$(shasum -a 256 "${TMPDIR}/${ASSET}" | awk '{print $1}')"
-  test "${EXPECTED}" = "${ACTUAL}"
-  tar -xzf "${TMPDIR}/${ASSET}" -C "${TMPDIR}"
-  mkdir -p "${HOME}/.local/bin"
-  install -m 0755 "${TMPDIR}/cas_${VERSION}_darwin_arm64" "${HOME}/.local/bin/cas"
-  export PATH="${HOME}/.local/bin:${PATH}"
-  cas version
-fi
+curl -fsSL https://raw.githubusercontent.com/LaneBirmingham/coding-agent-sync/main/scripts/install.sh | bash
 ```
+
+Optional script overrides:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/LaneBirmingham/coding-agent-sync/main/scripts/install.sh | CAS_VERSION=v0.3.0 bash
+curl -fsSL https://raw.githubusercontent.com/LaneBirmingham/coding-agent-sync/main/scripts/install.sh | CAS_INSTALL_DIR=/usr/local/bin bash
+```
+
+Release binaries currently cover `darwin/arm64`, `linux/amd64`, and `linux/arm64`.
 
 ### Fallback: build from source (`go install`)
 
@@ -74,6 +68,7 @@ For partial sync:
 ```bash
 cas sync instructions --from claude --to opencode --scope local
 cas sync skills --from claude --to copilot --scope local
+cas sync --from codex --to claude,opencode --scope local
 ```
 
 ## 3) Use archive workflow for migration/backup
@@ -100,15 +95,19 @@ Local targets:
 
 - Claude instructions: `CLAUDE.md` (or `.claude/CLAUDE.md` as source)
 - Copilot instructions: `AGENTS.md`
+- Codex instructions (read precedence): `AGENTS.override.md`, `AGENTS.md`, `TEAM_GUIDE.md`, `.agents.md`
 - OpenCode instructions: `AGENTS.md`
 - Claude skills: `.claude/skills/*/SKILL.md`
 - Copilot skills: `.github/skills/*/SKILL.md`
+- Codex skills (read): `.agents/skills/*/SKILL.md` (fallback `.codex/skills/*/SKILL.md`)
 - OpenCode skills: `.opencode/skills/*/SKILL.md`
 
 Global targets:
 
 - Claude instructions: `~/.claude/CLAUDE.md`
 - Copilot skills: `~/.copilot/skills/*/SKILL.md`
+- Codex instructions (read): `$CODEX_HOME/AGENTS.override.md`, `$CODEX_HOME/AGENTS.md` (fallback `~/.codex/*`); write target is `$CODEX_HOME/AGENTS.md`
+- Codex skills (read): `~/.agents/skills/*/SKILL.md` (fallback `$CODEX_HOME/skills/*/SKILL.md`); write target is `~/.agents/skills/*/SKILL.md`
 - OpenCode instructions: `~/.config/opencode/AGENTS.md`
 - OpenCode skills: `~/.config/opencode/skills/*/SKILL.md`
 
