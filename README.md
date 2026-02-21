@@ -25,15 +25,18 @@ If you prefer manual control, install from releases and then ask your agent to c
 
 ## Manual install and usage
 
-### What is currently built
+### Usage commands
 
-- Stable releases are published from `main`.
-- `dev` runs CI but does not publish beta releases.
-- Current prebuilt artifact target is `darwin/arm64`.
-- Artifact name: `cas_<version>_darwin_arm64.tar.gz`
-- Checksum file: `SHA256SUMS`
-- Other platforms can install from source with `go install`.
-
+```bash
+cas diff --from claude --to copilot,opencode --scope local
+cas sync --from claude --to copilot,opencode --scope local
+cas sync instructions --from claude --to opencode --scope local
+cas sync skills --from claude --to copilot --scope local
+cas export --from claude --scope local -o claude-local.zip
+cas import --to copilot,opencode --scope local -i claude-local.zip
+cas --help
+cas sync --help
+```
 ### Install manually (release binary)
 
 Releases: <https://github.com/LaneBirmingham/coding-agent-sync/releases>
@@ -57,18 +60,13 @@ cas version
 go install github.com/LaneBirmingham/coding-agent-sync@latest
 ```
 
-### Usage commands
+### What is currently built
 
-```bash
-cas diff --from claude --to copilot,opencode --scope local
-cas sync --from claude --to copilot,opencode --scope local
-cas sync instructions --from claude --to opencode --scope local
-cas sync skills --from claude --to copilot --scope local
-cas export --from claude --scope local -o claude-local.zip
-cas import --to copilot,opencode --scope local -i claude-local.zip
-cas --help
-cas sync --help
-```
+- Stable releases are published from `main`.
+- Current prebuilt artifact target is `darwin/arm64`.
+- Artifact name: `cas_<version>_darwin_arm64.tar.gz`
+- Checksum file: `SHA256SUMS`
+- Other platforms can install from source with `go install`.
 
 ## Install and run locally
 
@@ -114,13 +112,6 @@ See [`docs/release.md`](docs/release.md) for workflow and release details.
 - Conventional Commit enforcement
 - `release-please` setup for `main` (stable)
 - Binary release assets (`darwin/arm64`)
-
-## Codex in CI
-
-For Codex, user-level paths resolve under the CI runner's home directory. In GitHub Actions this home is ephemeral for each run, so user-level instructions and skills must be created during the workflow when needed.
-## Included skill
-
-This repo includes a Codex skill at [`skills/coding-agent-sync/SKILL.md`](skills/coding-agent-sync/SKILL.md) that teaches an agent to install `cas` and run safe sync/export/import workflows.
 
 ## AI-assisted development disclaimer
 
