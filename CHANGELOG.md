@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/LaneBirmingham/coding-agent-sync/compare/v0.4.1...v0.5.0) (2026-02-22)
+
+
+### Features
+
+* Add support for Gemini ([de0a7b3](https://github.com/LaneBirmingham/coding-agent-sync/commit/de0a7b34514c26fd5eff4491f7c170ab675b1d4a))
+
 ## [0.4.1](https://github.com/LaneBirmingham/coding-agent-sync/compare/v0.4.0...v0.4.1) (2026-02-21)
 
 
