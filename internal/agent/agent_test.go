@@ -604,3 +604,182 @@ func TestCodex_Global_InstructionsPath_WindowsStyleEnv(t *testing.T) {
 		t.Errorf("expected windows-style home path %q, got %q", want, got)
 	}
 }
+
+// --- Gemini local tests ---
+
+func TestGemini_ReadWriteInstructions(t *testing.T) {
+	root := setupTestDir(t)
+	writeTestFile(t, filepath.Join(root, "GEMINI.md"), "# Gemini instructions")
+
+	g := &Gemini{}
+	inst, err := g.ReadInstructions(config.Local(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst == nil || inst.Content != "# Gemini instructions" {
+		t.Errorf("expected '# Gemini instructions', got %v", inst)
+	}
+
+	root2 := setupTestDir(t)
+	err = g.WriteInstructions(config.Local(root2), inst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := readTestFile(t, filepath.Join(root2, "GEMINI.md"))
+	if got != "# Gemini instructions" {
+		t.Errorf("expected '# Gemini instructions', got %q", got)
+	}
+}
+
+func TestGemini_ReadInstructions_Missing(t *testing.T) {
+	root := setupTestDir(t)
+	g := &Gemini{}
+	inst, err := g.ReadInstructions(config.Local(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst != nil {
+		t.Error("expected nil for missing instructions")
+	}
+}
+
+func TestGemini_InstructionsPath(t *testing.T) {
+	g := &Gemini{}
+	got := g.InstructionsPath(config.Local("/project"))
+	want := filepath.Join("/project", "GEMINI.md")
+	if got != want {
+		t.Errorf("expected %q, got %q", want, got)
+	}
+}
+
+func TestGemini_ReadWriteSkills(t *testing.T) {
+	root := setupTestDir(t)
+	writeTestFile(t, filepath.Join(root, ".gemini", "skills", "my-skill", "SKILL.md"), "skill content")
+
+	g := &Gemini{}
+	skills, err := g.ReadSkills(config.Local(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skills) != 1 || skills[0].Name != "my-skill" || skills[0].Content != "skill content" {
+		t.Errorf("unexpected skills: %v", skills)
+	}
+
+	root2 := setupTestDir(t)
+	err = g.WriteSkills(config.Local(root2), skills)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := readTestFile(t, filepath.Join(root2, ".gemini", "skills", "my-skill", "SKILL.md"))
+	if got != "skill content" {
+		t.Errorf("expected 'skill content', got %q", got)
+	}
+}
+
+func TestGemini_Skills_Local_FallbackPriority(t *testing.T) {
+	root := setupTestDir(t)
+	writeTestFile(t, filepath.Join(root, ".agents", "skills", "canonical", "SKILL.md"), "canonical content")
+	writeTestFile(t, filepath.Join(root, ".gemini", "skills", "legacy", "SKILL.md"), "legacy content")
+
+	g := &Gemini{}
+	skills, err := g.ReadSkills(config.Local(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skills) != 1 || skills[0].Name != "canonical" {
+		t.Errorf("expected canonical skills, got %v", skills)
+	}
+}
+
+func TestGemini_Skills_Local_Fallback(t *testing.T) {
+	root := setupTestDir(t)
+	writeTestFile(t, filepath.Join(root, ".gemini", "skills", "legacy", "SKILL.md"), "legacy content")
+
+	g := &Gemini{}
+	skills, err := g.ReadSkills(config.Local(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skills) != 1 || skills[0].Name != "legacy" {
+		t.Errorf("expected legacy fallback skills, got %v", skills)
+	}
+}
+
+// --- Gemini global tests ---
+
+func TestGemini_Global_ReadWriteInstructions(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	g := &Gemini{}
+
+	inst, err := g.ReadInstructions(config.Global())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst != nil {
+		t.Error("expected nil for missing global instructions")
+	}
+
+	err = g.WriteInstructions(config.Global(), &Instruction{Content: "# Global Gemini"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	inst, err = g.ReadInstructions(config.Global())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst == nil || inst.Content != "# Global Gemini" {
+		t.Errorf("expected '# Global Gemini', got %v", inst)
+	}
+
+	path := g.InstructionsPath(config.Global())
+	if path != filepath.Join(home, ".gemini", "GEMINI.md") {
+		t.Errorf("unexpected global path: %q", path)
+	}
+}
+
+func TestGemini_Global_ReadWriteSkills(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	g := &Gemini{}
+	writeTestFile(t, filepath.Join(home, ".gemini", "skills", "global-skill", "SKILL.md"), "global skill")
+
+	skills, err := g.ReadSkills(config.Global())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skills) != 1 || skills[0].Name != "global-skill" {
+		t.Errorf("unexpected skills: %v", skills)
+	}
+
+	home2 := t.TempDir()
+	t.Setenv("HOME", home2)
+	err = g.WriteSkills(config.Global(), skills)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := readTestFile(t, filepath.Join(home2, ".gemini", "skills", "global-skill", "SKILL.md"))
+	if got != "global skill" {
+		t.Errorf("expected 'global skill', got %q", got)
+	}
+}
+
+func TestGemini_Global_Skills_FallbackPriority(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	writeTestFile(t, filepath.Join(home, ".agents", "skills", "canonical", "SKILL.md"), "canonical content")
+	writeTestFile(t, filepath.Join(home, ".gemini", "skills", "legacy", "SKILL.md"), "legacy content")
+
+	g := &Gemini{}
+	skills, err := g.ReadSkills(config.Global())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skills) != 1 || skills[0].Name != "canonical" {
+		t.Errorf("expected canonical global skills, got %v", skills)
+	}
+}

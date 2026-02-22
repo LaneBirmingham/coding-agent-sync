@@ -4,11 +4,11 @@
 [![Latest Release](https://img.shields.io/github/v/release/LaneBirmingham/coding-agent-sync?display_name=tag)](https://github.com/LaneBirmingham/coding-agent-sync/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-`coding-agent-sync` (`cas`) syncs instructions and skills across AI coding agents: Claude Code, GitHub Copilot (coding agent / agent mode), Codex, and OpenCode.
+`coding-agent-sync` (`cas`) syncs instructions and skills across AI coding agents: Claude Code, GitHub Copilot (coding agent / agent mode), Codex, OpenCode, and Gemini CLI.
 
 ## Background
 
-Many people switch between AI coding agents, whether that is due to subscription/usage limits or using different tools for work vs personal projects. `cas` helps keep instructions and skills in sync across Claude Code, GitHub Copilot (coding agent / agent mode), Codex, and OpenCode so you can avoid manual copy/paste between agent-specific directories and keep your best setup available everywhere.
+Many people switch between AI coding agents, whether that is due to subscription/usage limits or using different tools for work vs personal projects. `cas` helps keep instructions and skills in sync across Claude Code, GitHub Copilot (coding agent / agent mode), Codex, OpenCode, and Gemini CLI so you can avoid manual copy/paste between agent-specific directories and keep your best setup available everywhere.
 
 ## AI-assisted install and usage
 

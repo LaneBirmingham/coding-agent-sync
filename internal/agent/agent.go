@@ -33,6 +33,7 @@ var registry = map[config.Agent]Agent{
 	config.Copilot:  &Copilot{},
 	config.Codex:    &Codex{},
 	config.OpenCode: &OpenCode{},
+	config.Gemini:   &Gemini{},
 }
 
 // Get returns the Agent implementation for the given agent type.
